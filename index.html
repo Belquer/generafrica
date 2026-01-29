@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Percussion Jam - Lyria RealTime</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <span class="logo-icon">🥁</span>
+                <h1>Percussion Jam</h1>
+            </div>
+            <div class="connection-status" id="connectionStatus">
+                <span class="status-dot"></span>
+                <span class="status-text">Disconnected</span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- API Key Section -->
+            <section class="api-key-section" id="apiKeySection">
+                <div class="api-key-card">
+                    <h2>Connect to Lyria RealTime</h2>
+                    <p>Enter your Google AI API key to start jamming</p>
+                    <div class="api-key-input-group">
+                        <input type="password" id="apiKeyInput" placeholder="Enter your Gemini API key" autocomplete="off">
+                        <button id="connectBtn" class="btn btn-primary">Connect</button>
+                    </div>
+                    <p class="api-key-help">
+                        Get your free API key at <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>
+                    </p>
+                </div>
+            </section>
+
+            <!-- Visualizer -->
+            <section class="visualizer-section">
+                <canvas id="visualizer"></canvas>
+                <div class="visualizer-overlay" id="visualizerOverlay">
+                    <span class="play-icon">▶</span>
+                    <span>Click PLAY to start</span>
+                </div>
+            </section>
+
+            <!-- Percussion Pads -->
+            <section class="pads-section">
+                <h2 class="section-title">Percussion Styles</h2>
+                <div class="pads-grid">
+                    <button class="pad" data-style="african" data-key="1">
+                        <span class="pad-emoji">🌍</span>
+                        <span class="pad-name">African</span>
+                        <span class="pad-key">1</span>
+                    </button>
+                    <button class="pad" data-style="latin" data-key="2">
+                        <span class="pad-emoji">💃</span>
+                        <span class="pad-name">Latin</span>
+                        <span class="pad-key">2</span>
+                    </button>
+                    <button class="pad" data-style="electronic" data-key="3">
+                        <span class="pad-emoji">🎛️</span>
+                        <span class="pad-name">Electronic</span>
+                        <span class="pad-key">3</span>
+                    </button>
+                    <button class="pad" data-style="jazz" data-key="4">
+                        <span class="pad-emoji">🎷</span>
+                        <span class="pad-name">Jazz Brushes</span>
+                        <span class="pad-key">4</span>
+                    </button>
+                    <button class="pad" data-style="rock" data-key="5">
+                        <span class="pad-emoji">🎸</span>
+                        <span class="pad-name">Rock</span>
+                        <span class="pad-key">5</span>
+                    </button>
+                    <button class="pad" data-style="world" data-key="6">
+                        <span class="pad-emoji">🪘</span>
+                        <span class="pad-name">World Fusion</span>
+                        <span class="pad-key">6</span>
+                    </button>
+                    <button class="pad" data-style="minimal" data-key="7">
+                        <span class="pad-emoji">◯</span>
+                        <span class="pad-name">Minimal</span>
+                        <span class="pad-key">7</span>
+                    </button>
+                    <button class="pad" data-style="ambient" data-key="8">
+                        <span class="pad-emoji">🌊</span>
+                        <span class="pad-name">Ambient</span>
+                        <span class="pad-key">8</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Controls Section -->
+            <section class="controls-section">
+                <!-- Transport Controls -->
+                <div class="transport-controls">
+                    <button id="playBtn" class="transport-btn play-btn" disabled>
+                        <span class="btn-icon">▶</span>
+                        <span>Play</span>
+                    </button>
+                    <button id="pauseBtn" class="transport-btn pause-btn" disabled>
+                        <span class="btn-icon">⏸</span>
+                        <span>Pause</span>
+                    </button>
+                    <button id="stopBtn" class="transport-btn stop-btn" disabled>
+                        <span class="btn-icon">⏹</span>
+                        <span>Stop</span>
+                    </button>
+                </div>
+
+                <!-- Parameter Controls -->
+                <div class="parameters-panel">
+                    <h3 class="panel-title">Parameters</h3>
+
+                    <!-- BPM Control -->
+                    <div class="param-control">
+                        <div class="param-header">
+                            <label for="bpmSlider">BPM</label>
+                            <span class="param-value" id="bpmValue">120</span>
+                        </div>
+                        <input type="range" id="bpmSlider" min="60" max="200" value="120" class="slider">
+                        <div class="param-marks">
+                            <span>60</span>
+                            <span>130</span>
+                            <span>200</span>
+                        </div>
+                    </div>
+
+                    <!-- Density Control -->
+                    <div class="param-control">
+                        <div class="param-header">
+                            <label for="densitySlider">Density</label>
+                            <span class="param-value" id="densityValue">50%</span>
+                        </div>
+                        <input type="range" id="densitySlider" min="0" max="100" value="50" class="slider">
+                        <div class="param-marks">
+                            <span>Sparse</span>
+                            <span>Busy</span>
+                        </div>
+                    </div>
+
+                    <!-- Brightness Control -->
+                    <div class="param-control">
+                        <div class="param-header">
+                            <label for="brightnessSlider">Brightness</label>
+                            <span class="param-value" id="brightnessValue">50%</span>
+                        </div>
+                        <input type="range" id="brightnessSlider" min="0" max="100" value="50" class="slider">
+                        <div class="param-marks">
+                            <span>Dark</span>
+                            <span>Bright</span>
+                        </div>
+                    </div>
+
+                    <!-- Scale Selection -->
+                    <div class="param-control">
+                        <div class="param-header">
+                            <label for="scaleSelect">Scale</label>
+                        </div>
+                        <select id="scaleSelect" class="select-input">
+                            <option value="SCALE_UNSPECIFIED">Auto</option>
+                            <option value="C_MAJOR_A_MINOR">C Major / A Minor</option>
+                            <option value="D_MAJOR_B_MINOR">D Major / B Minor</option>
+                            <option value="E_MAJOR_C_SHARP_MINOR">E Major / C# Minor</option>
+                            <option value="F_MAJOR_D_MINOR">F Major / D Minor</option>
+                            <option value="G_MAJOR_E_MINOR">G Major / E Minor</option>
+                            <option value="A_MAJOR_F_SHARP_MINOR">A Major / F# Minor</option>
+                            <option value="B_MAJOR_G_SHARP_MINOR">B Major / G# Minor</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Mixer Section -->
+                <div class="mixer-panel">
+                    <h3 class="panel-title">Mixer</h3>
+                    <div class="mixer-controls">
+                        <div class="mixer-channel">
+                            <label class="toggle-label">
+                                <input type="checkbox" id="drumsToggle" checked>
+                                <span class="toggle-slider"></span>
+                                <span class="toggle-text">Drums</span>
+                            </label>
+                        </div>
+                        <div class="mixer-channel">
+                            <label class="toggle-label">
+                                <input type="checkbox" id="bassToggle" checked>
+                                <span class="toggle-slider"></span>
+                                <span class="toggle-text">Bass</span>
+                            </label>
+                        </div>
+                        <div class="mixer-channel">
+                            <label class="toggle-label">
+                                <input type="checkbox" id="onlyRhythmToggle">
+                                <span class="toggle-slider"></span>
+                                <span class="toggle-text">Rhythm Only</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Blend Controls -->
+                <div class="blend-panel">
+                    <h3 class="panel-title">Style Blend</h3>
+                    <div class="blend-display" id="blendDisplay">
+                        <p class="blend-empty">Select percussion styles to blend</p>
+                    </div>
+                    <button id="clearBlendBtn" class="btn btn-secondary btn-small">Clear Blend</button>
+                </div>
+            </section>
+
+            <!-- Custom Prompt Section -->
+            <section class="prompt-section">
+                <h3 class="panel-title">Custom Prompt</h3>
+                <div class="prompt-input-group">
+                    <textarea id="customPrompt" placeholder="Describe your percussion style... e.g., 'Tribal drums with electronic hi-hats and deep sub bass'"></textarea>
+                    <button id="applyPromptBtn" class="btn btn-primary" disabled>Apply</button>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="keyboard-hints">
+                <span><kbd>Space</kbd> Play/Pause</span>
+                <span><kbd>1-8</kbd> Styles</span>
+                <span><kbd>↑↓</kbd> BPM</span>
+                <span><kbd>←→</kbd> Density</span>
+            </div>
+            <p class="powered-by">Powered by Google Lyria RealTime</p>
+        </footer>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
