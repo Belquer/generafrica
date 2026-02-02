@@ -23,13 +23,16 @@ export class LyriaClient {
             onClose: null
         };
         this.currentConfig = {
-            bpm: 120,
-            density: 0.5,
+            bpm: 90,
+            density: 0.6,
             brightness: 0.5,
+            guidance: 2.0,
+            temperature: 1.1,
+            topK: 40,
             scale: 'SCALE_UNSPECIFIED',
             muteDrums: false,
             muteBass: false,
-            onlyBassAndDrums: false
+            onlyBassAndDrums: true
         };
         this.currentPrompts = [];
         this.reconnectAttempts = 0;
@@ -262,51 +265,25 @@ export class LyriaClient {
      * Set music generation configuration
      */
     setMusicGenerationConfig(config) {
-        // Update internal config
+        // Merge into current config
         this.currentConfig = { ...this.currentConfig, ...config };
 
-        const configObj = {};
-
-        // BPM (requires reset_context to take effect)
-        if (config.bpm !== undefined) {
-            configObj.bpm = Math.round(config.bpm);
-        }
-
-        // Density (0.0 to 1.0)
-        if (config.density !== undefined) {
-            configObj.density = Math.max(0, Math.min(1, config.density));
-        }
-
-        // Brightness (0.0 to 1.0)
-        if (config.brightness !== undefined) {
-            configObj.brightness = Math.max(0, Math.min(1, config.brightness));
-        }
-
-        // Scale
-        if (config.scale !== undefined) {
-            configObj.scale = config.scale;
-        }
-
-        // Mute controls
-        if (config.muteDrums !== undefined) {
-            configObj.muteDrums = config.muteDrums;
-        }
-
-        if (config.muteBass !== undefined) {
-            configObj.muteBass = config.muteBass;
-        }
-
-        if (config.onlyBassAndDrums !== undefined) {
-            configObj.onlyBassAndDrums = config.onlyBassAndDrums;
-        }
-
-        // Generation mode
-        if (config.mode !== undefined) {
-            configObj.musicGenerationMode = config.mode;
-        }
+        // Must send the FULL config every time — partial updates reset other fields to defaults
+        const fullConfig = {
+            bpm: Math.round(this.currentConfig.bpm),
+            density: Math.max(0, Math.min(1, this.currentConfig.density)),
+            brightness: Math.max(0, Math.min(1, this.currentConfig.brightness)),
+            guidance: Math.max(0, Math.min(6, this.currentConfig.guidance)),
+            temperature: Math.max(0, Math.min(3, this.currentConfig.temperature)),
+            topK: this.currentConfig.topK,
+            scale: this.currentConfig.scale,
+            muteDrums: this.currentConfig.muteDrums,
+            muteBass: this.currentConfig.muteBass,
+            onlyBassAndDrums: this.currentConfig.onlyBassAndDrums
+        };
 
         const message = {
-            musicGenerationConfig: configObj
+            musicGenerationConfig: fullConfig
         };
 
         return this.send(message);

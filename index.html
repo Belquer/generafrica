@@ -58,6 +58,60 @@
                     <span class="btn-icon" id="playBtnIcon">▶</span>
                     <span id="playBtnLabel">Play</span>
                 </button>
+                <button id="stopBtn" class="transport-btn stop-btn" disabled>
+                    <span class="btn-icon">⏹</span>
+                    <span>Stop</span>
+                </button>
+            </section>
+
+            <!-- Prompt Builder -->
+            <section class="prompt-section">
+                <div class="prompt-group">
+                    <h4 class="prompt-group-title">Instruments</h4>
+                    <div class="checkbox-grid" id="instrumentGrid">
+                        <label class="chip"><input type="checkbox" value="djembe" checked><span>Djembe</span></label>
+                        <label class="chip"><input type="checkbox" value="dundun" checked><span>Dundun</span></label>
+                        <label class="chip"><input type="checkbox" value="talking drum"><span>Talking Drum</span></label>
+                        <label class="chip"><input type="checkbox" value="shekere"><span>Shekere</span></label>
+                        <label class="chip"><input type="checkbox" value="balafon"><span>Balafon</span></label>
+                        <label class="chip"><input type="checkbox" value="kora"><span>Kora</span></label>
+                        <label class="chip"><input type="checkbox" value="udu drum"><span>Udu</span></label>
+                        <label class="chip"><input type="checkbox" value="bougarabou"><span>Bougarabou</span></label>
+                        <label class="chip"><input type="checkbox" value="tama"><span>Tama</span></label>
+                        <label class="chip"><input type="checkbox" value="kalimba"><span>Kalimba</span></label>
+                        <label class="chip"><input type="checkbox" value="axatse"><span>Axatse</span></label>
+                        <label class="chip"><input type="checkbox" value="ngoma"><span>Ngoma</span></label>
+                        <label class="chip"><input type="checkbox" value="djun djun bell"><span>Bell</span></label>
+                        <label class="chip"><input type="checkbox" value="caxixi"><span>Caxixi</span></label>
+                        <label class="chip"><input type="checkbox" value="mbira"><span>Mbira</span></label>
+                        <label class="chip"><input type="checkbox" value="log drum"><span>Log Drum</span></label>
+                    </div>
+                </div>
+                <div class="prompt-group">
+                    <h4 class="prompt-group-title">Rhythms</h4>
+                    <div class="checkbox-grid" id="rhythmGrid">
+                        <label class="chip"><input type="checkbox" value="West African" checked><span>West African</span></label>
+                        <label class="chip"><input type="checkbox" value="polyrhythm" checked><span>Polyrhythm</span></label>
+                        <label class="chip"><input type="checkbox" value="Afrobeat groove"><span>Afrobeat</span></label>
+                        <label class="chip"><input type="checkbox" value="Soukous rhythm"><span>Soukous</span></label>
+                        <label class="chip"><input type="checkbox" value="Highlife rhythm"><span>Highlife</span></label>
+                        <label class="chip"><input type="checkbox" value="Mbalax rhythm"><span>Mbalax</span></label>
+                        <label class="chip"><input type="checkbox" value="Gnawa trance"><span>Gnawa</span></label>
+                        <label class="chip"><input type="checkbox" value="Jùjú rhythm"><span>Jùjú</span></label>
+                        <label class="chip"><input type="checkbox" value="Makossa groove"><span>Makossa</span></label>
+                        <label class="chip"><input type="checkbox" value="Bikutsi rhythm"><span>Bikutsi</span></label>
+                        <label class="chip"><input type="checkbox" value="Kuku rhythm"><span>Kuku</span></label>
+                        <label class="chip"><input type="checkbox" value="Sinte rhythm"><span>Sinte</span></label>
+                        <label class="chip"><input type="checkbox" value="Kakilambe rhythm"><span>Kakilambe</span></label>
+                        <label class="chip"><input type="checkbox" value="Sabar rhythm"><span>Sabar</span></label>
+                        <label class="chip"><input type="checkbox" value="Mandiani rhythm"><span>Mandiani</span></label>
+                        <label class="chip"><input type="checkbox" value="Isicathamiya rhythm"><span>Isicathamiya</span></label>
+                    </div>
+                </div>
+                <div class="prompt-preview">
+                    <span class="prompt-preview-label">Prompt:</span>
+                    <span class="prompt-preview-text" id="promptPreview">djembe, dundun, West African, polyrhythm</span>
+                </div>
             </section>
 
             <!-- Controls Section -->
@@ -110,6 +164,7 @@
             <h4 class="footer-title">Keyboard Shortcuts</h4>
             <div class="keyboard-hints">
                 <span><kbd>Space</kbd> Play/Pause</span>
+                <span><kbd>Esc</kbd> Stop</span>
                 <span><kbd>↑↓</kbd> BPM</span>
                 <span><kbd>←→</kbd> Density</span>
                 <span><kbd>Right-click</kbd> MIDI Learn</span>

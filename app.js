@@ -21,10 +21,7 @@ const SLIDER_NAMES = {
     brightnessSlider: 'Brightness'
 };
 
-// African percussion prompt
-const AFRICAN_PROMPT = 'West African djembe ensemble, traditional polyrhythmic drumming, talking drums, dundun bass drums, shekere percussion, interlocking polyrhythms, call and response patterns';
-
-class AfricanDrumsApp {
+class GenerAfricaApp {
     constructor() {
         this.lyriaClient = null;
         this.audioPlayer = new AudioPlayer();
@@ -63,6 +60,12 @@ class AfricanDrumsApp {
             playBtn: document.getElementById('playBtn'),
             playBtnIcon: document.getElementById('playBtnIcon'),
             playBtnLabel: document.getElementById('playBtnLabel'),
+            stopBtn: document.getElementById('stopBtn'),
+
+            // Prompt
+            instrumentGrid: document.getElementById('instrumentGrid'),
+            rhythmGrid: document.getElementById('rhythmGrid'),
+            promptPreview: document.getElementById('promptPreview'),
 
             // Parameters
             bpmSlider: document.getElementById('bpmSlider'),
@@ -188,8 +191,13 @@ class AfricanDrumsApp {
             if (e.key === 'Enter') this.handleConnect();
         });
 
-        // Transport controls — single play/pause toggle
+        // Transport controls
         this.elements.playBtn.addEventListener('click', () => this.togglePlayPause());
+        this.elements.stopBtn.addEventListener('click', () => this.handleStop());
+
+        // Prompt checkboxes — update on any change
+        this.elements.instrumentGrid.addEventListener('change', () => this.onPromptChange());
+        this.elements.rhythmGrid.addEventListener('change', () => this.onPromptChange());
 
         // Parameter sliders
         this.elements.bpmSlider.addEventListener('input', (e) => {
@@ -197,19 +205,36 @@ class AfricanDrumsApp {
         });
         this.elements.bpmSlider.addEventListener('change', (e) => {
             this.currentParams.bpm = parseInt(e.target.value);
-            this.applyConfig({ bpm: this.currentParams.bpm });
-            this.lyriaClient?.resetContext();
+            // BPM requires stop/play to take effect
+            if (this.lyriaClient && this.isConnected && this.isPlaying) {
+                this.lyriaClient.stop();
+                this.audioPlayer.hardStop();
+                setTimeout(() => {
+                    this.applyConfig({ bpm: this.currentParams.bpm });
+                    this.applyPrompt();
+                    setTimeout(() => {
+                        this.audioPlayer.resume();
+                        this.lyriaClient?.play();
+                    }, 100);
+                }, 100);
+            } else if (this.lyriaClient && this.isConnected) {
+                this.applyConfig({ bpm: this.currentParams.bpm });
+            }
             this.showToast(`BPM: ${this.currentParams.bpm}`, 'info');
         });
 
         this.elements.densitySlider.addEventListener('input', (e) => {
             this.elements.densityValue.textContent = `${e.target.value}%`;
+        });
+        this.elements.densitySlider.addEventListener('change', (e) => {
             this.currentParams.density = e.target.value / 100;
             this.applyConfig({ density: this.currentParams.density });
         });
 
         this.elements.brightnessSlider.addEventListener('input', (e) => {
             this.elements.brightnessValue.textContent = `${e.target.value}%`;
+        });
+        this.elements.brightnessSlider.addEventListener('change', (e) => {
             this.currentParams.brightness = e.target.value / 100;
             this.applyConfig({ brightness: this.currentParams.brightness });
         });
@@ -299,8 +324,8 @@ class AfricanDrumsApp {
     }
 
     async setInitialConfig() {
-        // Set African percussion prompt
-        this.setAfricanPrompt();
+        // Set prompt from input field
+        this.applyPrompt();
 
         // Set initial music config
         this.applyConfig({
@@ -310,10 +335,31 @@ class AfricanDrumsApp {
         });
     }
 
-    setAfricanPrompt() {
+    buildPrompt() {
+        const instruments = [...this.elements.instrumentGrid.querySelectorAll('input:checked')]
+            .map(cb => cb.value);
+        const rhythms = [...this.elements.rhythmGrid.querySelectorAll('input:checked')]
+            .map(cb => cb.value);
+        return [...instruments, ...rhythms].join(', ');
+    }
+
+    onPromptChange() {
+        const prompt = this.buildPrompt();
+        this.elements.promptPreview.textContent = prompt || '(select at least one)';
         if (!this.lyriaClient || !this.isConnected) return;
+        if (!prompt) return;
         this.lyriaClient.setWeightedPrompts([
-            { text: AFRICAN_PROMPT, weight: 1.0 }
+            { text: prompt, weight: 1.0 }
+        ]);
+    }
+
+    applyPrompt() {
+        if (!this.lyriaClient || !this.isConnected) return;
+        const prompt = this.buildPrompt();
+        if (!prompt) return;
+        this.elements.promptPreview.textContent = prompt;
+        this.lyriaClient.setWeightedPrompts([
+            { text: prompt, weight: 1.0 }
         ]);
     }
 
@@ -372,15 +418,42 @@ class AfricanDrumsApp {
 
         if (this.isPlaying) {
             this.lyriaClient.pause();
+            this.isPlaying = false;
+            this.elements.playBtn.classList.remove('playing');
+            this.elements.playBtnIcon.textContent = '▶';
+            this.elements.playBtnLabel.textContent = 'Play';
         } else {
             try {
                 await this.audioPlayer.resume();
                 this.lyriaClient.play();
+                this.isPlaying = true;
+                this.elements.playBtn.classList.add('playing');
+                this.elements.playBtnIcon.textContent = '⏸';
+                this.elements.playBtnLabel.textContent = 'Pause';
                 this.elements.visualizerOverlay.classList.add('hidden');
             } catch (error) {
                 console.error('[App] Error in togglePlayPause:', error);
             }
         }
+    }
+
+    handleStop() {
+        if (!this.lyriaClient || !this.isConnected) return;
+
+        // Tell Lyria to stop sending new audio
+        this.lyriaClient.stop();
+
+        // Update UI immediately
+        this.isPlaying = false;
+        this.elements.playBtn.classList.remove('playing');
+        this.elements.playBtnIcon.textContent = '▶';
+        this.elements.playBtnLabel.textContent = 'Play';
+
+        // Fade out audio over 500ms, then show overlay
+        this.audioPlayer.stop(0.5);
+        setTimeout(() => {
+            this.elements.visualizerOverlay.classList.remove('hidden');
+        }, 500);
     }
 
     handleKeyDown(e) {
@@ -401,6 +474,8 @@ class AfricanDrumsApp {
                         el.classList.remove('midi-learning');
                     });
                     this.showToast('MIDI learn cancelled', 'info');
+                } else {
+                    this.handleStop();
                 }
                 break;
 
@@ -540,6 +615,7 @@ class AfricanDrumsApp {
 
     enableControls(enabled) {
         this.elements.playBtn.disabled = !enabled;
+        this.elements.stopBtn.disabled = !enabled;
     }
 
     showToast(message, type = 'info') {
@@ -559,5 +635,5 @@ class AfricanDrumsApp {
 
 // Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    window.app = new AfricanDrumsApp();
+    window.app = new GenerAfricaApp();
 });

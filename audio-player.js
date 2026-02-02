@@ -64,8 +64,7 @@ export class AudioPlayer {
      * @param {ArrayBuffer} pcmData - Raw 16-bit PCM audio data
      */
     processAudioChunk(pcmData) {
-        if (!this.audioContext) {
-            console.warn('[AudioPlayer] Audio context not initialized');
+        if (!this.audioContext || this.isStopping) {
             return;
         }
 
@@ -216,10 +215,56 @@ export class AudioPlayer {
     }
 
     /**
-     * Stop all audio playback
+     * Stop all audio playback with a smooth fade out
+     * @param {number} fadeDuration - Fade duration in seconds (default 2)
      */
-    stop() {
-        // Stop all scheduled buffers
+    stop(fadeDuration = 0.5) {
+        if (!this.audioContext || !this.gainNode) {
+            return;
+        }
+
+        // Prevent new chunks from being scheduled
+        this.isStopping = true;
+
+        const now = this.audioContext.currentTime;
+
+        // Smooth fade out using linear ramp (avoids clicks)
+        this.gainNode.gain.cancelScheduledValues(now);
+        this.gainNode.gain.setValueAtTime(this.gainNode.gain.value, now);
+        this.gainNode.gain.linearRampToValueAtTime(0, now + fadeDuration);
+
+        // After fade completes, hard stop everything
+        this._stopTimeout = setTimeout(() => {
+            this.scheduledBuffers.forEach(item => {
+                try {
+                    item.source.stop();
+                    item.source.disconnect();
+                } catch (e) {
+                    // Ignore errors
+                }
+            });
+            this.scheduledBuffers = [];
+            this.nextStartTime = 0;
+            this.audioQueue = [];
+
+            // Restore gain for next play
+            if (this.gainNode && this.audioContext) {
+                this.gainNode.gain.cancelScheduledValues(this.audioContext.currentTime);
+                this.gainNode.gain.setValueAtTime(1.0, this.audioContext.currentTime);
+            }
+            this.isStopping = false;
+        }, fadeDuration * 1000);
+    }
+
+    /**
+     * Hard stop without fade (for internal use)
+     */
+    hardStop() {
+        if (this._stopTimeout) {
+            clearTimeout(this._stopTimeout);
+            this._stopTimeout = null;
+        }
+        this.isStopping = false;
         this.scheduledBuffers.forEach(item => {
             try {
                 item.source.stop();
@@ -231,6 +276,10 @@ export class AudioPlayer {
         this.scheduledBuffers = [];
         this.nextStartTime = 0;
         this.audioQueue = [];
+        if (this.gainNode && this.audioContext) {
+            this.gainNode.gain.cancelScheduledValues(this.audioContext.currentTime);
+            this.gainNode.gain.setValueAtTime(1.0, this.audioContext.currentTime);
+        }
     }
 
     /**

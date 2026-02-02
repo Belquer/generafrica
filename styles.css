@@ -327,12 +327,84 @@ body {
     border-color: var(--warning);
 }
 
+.stop-btn:not(:disabled):hover {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1));
+    border-color: var(--error);
+}
+
 .btn-icon {
     font-size: 1.1rem;
 }
 
-/* Audio Input Section */
+/* Prompt Section */
+.prompt-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-lg);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
 
+.prompt-group-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+}
+
+.checkbox-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.chip {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.chip input[type="checkbox"] {
+    display: none;
+}
+
+.chip span {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    transition: all var(--transition-fast);
+    user-select: none;
+}
+
+.chip input:checked + span {
+    background: rgba(217, 119, 6, 0.15);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+.chip:hover span {
+    border-color: var(--text-muted);
+}
+
+.prompt-preview {
+    padding: 10px 14px;
+    background: var(--bg-tertiary);
+    border-radius: var(--border-radius);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.prompt-preview-label {
+    color: var(--text-secondary);
+    margin-right: 6px;
+}
 
 /* Controls Section */
 .controls-section {
