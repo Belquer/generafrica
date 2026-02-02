@@ -305,16 +305,6 @@ export class LyriaClient {
             configObj.musicGenerationMode = config.mode;
         }
 
-        // Temperature
-        if (config.temperature !== undefined) {
-            configObj.temperature = config.temperature;
-        }
-
-        // Guidance
-        if (config.guidance !== undefined) {
-            configObj.guidance = config.guidance;
-        }
-
         const message = {
             musicGenerationConfig: configObj
         };
@@ -326,13 +316,10 @@ export class LyriaClient {
      * Start music playback
      */
     play() {
-        console.log('[Lyria] play() called, isSetupComplete:', this.isSetupComplete);
         const message = {
             playbackControl: 'PLAY'
         };
-        const result = this.send(message);
-        console.log('[Lyria] PLAY message sent, result:', result);
-        return result;
+        return this.send(message);
     }
 
     /**
