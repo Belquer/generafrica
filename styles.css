@@ -514,6 +514,20 @@ body {
     margin-left: 4px;
 }
 
+/* Chip MIDI Learning */
+.chip.midi-learning span {
+    animation: midiLearnPulse 1s ease-in-out infinite;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 8px var(--accent-glow);
+}
+
+/* Chip MIDI Mapped */
+.chip.midi-mapped span::after {
+    content: ' \25C9';
+    color: var(--accent-primary);
+    font-size: 0.6rem;
+}
+
 /* Select Input */
 .select-input {
     padding: 10px 12px;

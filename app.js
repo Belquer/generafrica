@@ -14,12 +14,15 @@ const MIDI_LEARNABLE_SLIDERS = [
     'brightnessSlider'
 ];
 
-// Human-readable names for sliders
-const SLIDER_NAMES = {
+// Human-readable names for sliders and chips
+const MIDI_NAMES = {
     bpmSlider: 'BPM',
     densitySlider: 'Density',
     brightnessSlider: 'Brightness'
 };
+
+// Alias for backward compat
+const SLIDER_NAMES = MIDI_NAMES;
 
 class GenerAfricaApp {
     constructor() {
@@ -108,27 +111,35 @@ class GenerAfricaApp {
             this.updateMidiStatus(connected);
         };
 
-        this.midiManager.onLearnStart = (sliderId) => {
-            // Highlight the slider being learned
-            const slider = this.elements[sliderId];
-            if (slider) {
-                slider.closest('.param-control').classList.add('midi-learning');
+        this.midiManager.onLearnStart = (targetId) => {
+            // Highlight the element being learned
+            if (targetId.startsWith('inst_') || targetId.startsWith('rhythm_')) {
+                const checkbox = document.querySelector(`[data-chip-id="${targetId}"]`);
+                if (checkbox) checkbox.closest('.chip').classList.add('midi-learning');
+            } else {
+                const slider = this.elements[targetId];
+                if (slider) slider.closest('.param-control').classList.add('midi-learning');
             }
-            this.showToast(`Move a MIDI knob to assign to ${SLIDER_NAMES[sliderId]}...`, 'info');
+            const name = MIDI_NAMES[targetId] || targetId;
+            this.showToast(`Move a MIDI knob to assign to ${name}...`, 'info');
         };
 
-        this.midiManager.onLearnComplete = (sliderId, cc, channel) => {
+        this.midiManager.onLearnComplete = (targetId, cc, channel) => {
             // Remove learning highlight, add mapped indicator
-            document.querySelectorAll('.param-control.midi-learning').forEach(el => {
+            document.querySelectorAll('.param-control.midi-learning, .chip.midi-learning').forEach(el => {
                 el.classList.remove('midi-learning');
             });
 
-            const slider = this.elements[sliderId];
-            if (slider) {
-                slider.closest('.param-control').classList.add('midi-mapped');
+            if (targetId.startsWith('inst_') || targetId.startsWith('rhythm_')) {
+                const checkbox = document.querySelector(`[data-chip-id="${targetId}"]`);
+                if (checkbox) checkbox.closest('.chip').classList.add('midi-mapped');
+            } else {
+                const slider = this.elements[targetId];
+                if (slider) slider.closest('.param-control').classList.add('midi-mapped');
             }
 
-            this.showToast(`${SLIDER_NAMES[sliderId]} mapped to CC ${cc}`, 'success');
+            const name = MIDI_NAMES[targetId] || targetId;
+            this.showToast(`${name} mapped to CC ${cc}`, 'success');
         };
 
         const supported = await this.midiManager.init();
@@ -138,7 +149,7 @@ class GenerAfricaApp {
             console.log('[App] Web MIDI not supported');
         }
 
-        // Restore visual state for existing mappings
+        // Restore visual state for existing slider mappings
         for (const sliderId of MIDI_LEARNABLE_SLIDERS) {
             if (this.midiManager.hasMapping(sliderId)) {
                 const slider = this.elements[sliderId];
@@ -147,10 +158,33 @@ class GenerAfricaApp {
                 }
             }
         }
+
+        // Restore visual state for existing chip mappings
+        document.querySelectorAll('[data-chip-id]').forEach(checkbox => {
+            const chipId = checkbox.dataset.chipId;
+            if (this.midiManager.hasMapping(chipId)) {
+                checkbox.closest('.chip').classList.add('midi-mapped');
+            }
+        });
     }
 
-    handleMidiCC(sliderId, midiValue) {
-        const slider = this.elements[sliderId];
+    handleMidiCC(targetId, midiValue) {
+        // Check if this is a chip toggle (inst_N or rhythm_N)
+        if (targetId.startsWith('inst_') || targetId.startsWith('rhythm_')) {
+            const checkbox = document.querySelector(`[data-chip-id="${targetId}"]`);
+            if (!checkbox) return;
+
+            const isOn = midiValue > 63;
+            checkbox.checked = isOn;
+            console.log(`[MIDI] ${targetId}: midi=${midiValue}, checked=${isOn}`);
+
+            // Fire change on the parent grid to trigger onPromptChange
+            this.onPromptChange();
+            return;
+        }
+
+        // Otherwise it's a slider
+        const slider = this.elements[targetId];
         if (!slider) return;
 
         // Scale MIDI 0-127 to slider min-max
@@ -160,15 +194,13 @@ class GenerAfricaApp {
         const scaled = min + (midiValue / 127) * (max - min);
         const rounded = Math.round(scaled / step) * step;
 
-        console.log(`[MIDI] ${sliderId}: midi=${midiValue}, min=${min}, max=${max}, step=${step}, scaled=${scaled}, rounded=${rounded}`);
+        console.log(`[MIDI] ${targetId}: midi=${midiValue}, min=${min}, max=${max}, step=${step}, scaled=${scaled}, rounded=${rounded}`);
 
         slider.value = rounded;
         slider.dispatchEvent(new Event('input'));
 
-        // BPM needs 'change' event for context reset
-        if (sliderId === 'bpmSlider') {
-            slider.dispatchEvent(new Event('change'));
-        }
+        // Dispatch change to trigger parameter update + new generation
+        slider.dispatchEvent(new Event('change'));
     }
 
     updateMidiStatus(connected) {
@@ -205,7 +237,6 @@ class GenerAfricaApp {
         });
         this.elements.bpmSlider.addEventListener('change', (e) => {
             this.currentParams.bpm = parseInt(e.target.value);
-            // BPM requires stop/play to take effect
             if (this.lyriaClient && this.isConnected && this.isPlaying) {
                 this.lyriaClient.stop();
                 this.audioPlayer.hardStop();
@@ -279,6 +310,34 @@ class GenerAfricaApp {
             });
         }
 
+        // MIDI learn: right-click on any chip
+        document.querySelectorAll('[data-chip-id]').forEach(checkbox => {
+            const chipId = checkbox.dataset.chipId;
+            const chipLabel = checkbox.closest('.chip');
+            if (!chipLabel) return;
+
+            chipLabel.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+
+                if (this.midiManager.isLearning) {
+                    this.midiManager.cancelLearn();
+                    document.querySelectorAll('.chip.midi-learning, .param-control.midi-learning').forEach(el => {
+                        el.classList.remove('midi-learning');
+                    });
+                    this.showToast('MIDI learn cancelled', 'info');
+                    return;
+                }
+
+                if (this.midiManager.hasMapping(chipId)) {
+                    this.midiManager.clearMapping(chipId);
+                    chipLabel.classList.remove('midi-mapped');
+                    this.showToast(`${chipId} MIDI mapping cleared`, 'info');
+                } else {
+                    this.midiManager.startLearn(chipId);
+                }
+            });
+        });
+
     }
 
     async handleConnect() {
@@ -348,9 +407,26 @@ class GenerAfricaApp {
         this.elements.promptPreview.textContent = prompt || '(select at least one)';
         if (!this.lyriaClient || !this.isConnected) return;
         if (!prompt) return;
-        this.lyriaClient.setWeightedPrompts([
-            { text: prompt, weight: 1.0 }
-        ]);
+
+        if (this.isPlaying) {
+            // Prompt change requires stop/play cycle to take effect
+            this.lyriaClient.stop();
+            this.audioPlayer.hardStop();
+            setTimeout(() => {
+                this.applyConfig({ bpm: this.currentParams.bpm });
+                this.lyriaClient.setWeightedPrompts([
+                    { text: prompt, weight: 1.0 }
+                ]);
+                setTimeout(() => {
+                    this.audioPlayer.resume();
+                    this.lyriaClient?.play();
+                }, 100);
+            }, 100);
+        } else {
+            this.lyriaClient.setWeightedPrompts([
+                { text: prompt, weight: 1.0 }
+            ]);
+        }
     }
 
     applyPrompt() {
@@ -470,7 +546,7 @@ class GenerAfricaApp {
             case 'Escape':
                 if (this.midiManager.isLearning) {
                     this.midiManager.cancelLearn();
-                    document.querySelectorAll('.param-control.midi-learning').forEach(el => {
+                    document.querySelectorAll('.param-control.midi-learning, .chip.midi-learning').forEach(el => {
                         el.classList.remove('midi-learning');
                     });
                     this.showToast('MIDI learn cancelled', 'info');
@@ -503,7 +579,7 @@ class GenerAfricaApp {
                 // Shift+M: clear all MIDI mappings
                 if (e.shiftKey) {
                     this.midiManager.clearAllMappings();
-                    document.querySelectorAll('.param-control.midi-mapped').forEach(el => {
+                    document.querySelectorAll('.param-control.midi-mapped, .chip.midi-mapped').forEach(el => {
                         el.classList.remove('midi-mapped');
                     });
                     this.showToast('All MIDI mappings cleared', 'info');
